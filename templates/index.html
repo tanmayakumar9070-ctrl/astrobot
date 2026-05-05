@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AstroBot v2 — Voice + Agent AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Share+Tech+Mono&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+:root {
+  --bg: #020608;
+  --surface: #060d14;
+  --card: #080f18;
+  --border: #0d2035;
+  --blue: #00aaff;
+  --cyan: #00ffee;
+  --gold: #ffcc44;
+  --purple: #aa44ff;
+  --green: #00ff88;
+  --red: #ff4466;
+  --text: #c8dff0;
+  --muted: #3a5a78;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Cinzel', serif;
+  --body: 'Exo 2', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(400px 400px at 20% 20%, rgba(0,100,200,0.04) 0%, transparent 100%),
+    radial-gradient(400px 400px at 80% 80%, rgba(100,0,200,0.04) 0%, transparent 100%);
+  pointer-events: none; z-index: 0;
+}
+
+/* HEADER */
+.header {
+  flex-shrink: 0;
+  background: rgba(6,13,20,0.97);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  position: relative;
+  z-index: 100;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--blue), var(--cyan), transparent);
+  opacity: 0.4;
+}
+.logo {
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 34px; height: 34px;
+  border: 1px solid var(--blue);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  background: rgba(0,170,255,0.08);
+  box-shadow: 0 0 14px rgba(0,170,255,0.2);
+}
+.logo span { color: var(--blue); }
+.logo-version {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--purple);
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border: 1px solid var(--purple);
+  margin-left: 4px;
+}
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hbtn {
+  padding: 6px 12px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); background: none;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase;
+}
+.hbtn:hover { color: var(--blue); border-color: var(--blue); }
+
+/* MAIN */
+.main { flex: 1; display: flex; overflow: hidden; position: relative; z-index: 1; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 260px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  background: rgba(6,13,20,0.9);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+@media (max-width: 700px) { .sidebar { display: none; } }
+
+.sidebar-block { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-label {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 4px;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.sidebar-label::before { content: '//'; color: var(--blue); }
+
+.apod-img { width: 100%; height: 130px; object-fit: cover; border: 1px solid var(--border); display: block; margin-bottom: 8px; cursor: pointer; }
+.apod-title { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+.apod-desc { font-size: 10px; color: var(--muted); line-height: 1.5; }
+
+.quick-btn {
+  width: 100%; text-align: left;
+  padding: 8px 10px;
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 2px solid var(--blue);
+  color: var(--muted); font-size: 11px; font-family: var(--body);
+  cursor: pointer; margin-bottom: 4px; transition: all 0.2s; line-height: 1.4;
+}
+.quick-btn:hover { color: var(--text); background: rgba(0,170,255,0.05); }
+
+/* Voice status in sidebar */
+.voice-status {
+  padding: 10px 12px;
+  background: rgba(0,255,136,0.05);
+  border: 1px solid rgba(0,255,136,0.2);
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  display: none;
+}
+.voice-status.active { display: flex; }
+.voice-wave { display: flex; gap: 2px; align-items: center; }
+.voice-bar {
+  width: 3px; background: var(--green);
+  border-radius: 2px;
+  animation: wave 0.8s infinite;
+}
+.voice-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+.voice-bar:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+.voice-bar:nth-child(3) { height: 10px; animation-delay: 0.3s; }
+.voice-bar:nth-child(4) { height: 16px; animation-delay: 0.45s; }
+.voice-bar:nth-child(5) { height: 8px; animation-delay: 0.6s; }
+@keyframes wave { 0%,100%{transform:scaleY(0.5)} 50%{transform:scaleY(1.2)} }
+
+/* CHAT */
+.chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.messages {
+  flex: 1; overflow-y: auto;
+  padding: 24px 20px;
+  display: flex; flex-direction: column; gap: 24px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+
+/* Welcome */
+.welcome { text-align: center; padding: 40px 24px; }
+.welcome-icon { font-size: 52px; margin-bottom: 16px; display: block; filter: drop-shadow(0 0 20px rgba(0,170,255,0.4)); }
+.welcome-title { font-family: var(--display); font-size: 26px; letter-spacing: 5px; margin-bottom: 8px; }
+.welcome-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 3px; margin-bottom: 20px; }
+.welcome-desc { font-size: 13px; color: var(--muted); max-width: 480px; margin: 0 auto 24px; line-height: 1.7; }
+.welcome-features {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;
+}
+.feature-tag {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); border-radius: 2px;
+}
+.feature-tag.v { color: var(--green); border-color: rgba(0,255,136,0.3); }
+.feature-tag.a { color: var(--purple); border-color: rgba(170,68,255,0.3); }
+.feature-tag.n { color: var(--blue); border-color: rgba(0,170,255,0.3); }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pill {
+  padding: 8px 14px; border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  cursor: pointer; transition: all 0.2s; border-radius: 2px;
+}
+.pill:hover { color: var(--blue); border-color: var(--blue); background: rgba(0,170,255,0.05); }
+
+/* Messages */
+.msg { display: flex; gap: 12px; align-items: flex-start; }
+.msg.user { flex-direction: row-reverse; }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; border: 1px solid var(--border);
+}
+.msg.user .avatar { background: rgba(0,102,255,0.1); border-color: rgba(0,102,255,0.4); }
+.msg.bot .avatar { background: rgba(0,255,238,0.06); border-color: rgba(0,255,238,0.3); }
+.msg-body { flex: 1; max-width: 820px; }
+.msg.user .msg-body { display: flex; flex-direction: column; align-items: flex-end; }
+
+/* Agent thinking box */
+.thinking-box {
+  background: rgba(170,68,255,0.04);
+  border: 1px solid rgba(170,68,255,0.2);
+  border-left: 2px solid var(--purple);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--purple);
+}
+.thinking-title {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--purple); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.thinking-title::before { content: '⚡'; }
+.thinking-step { padding: 2px 0; color: rgba(170,68,255,0.7); line-height: 1.5; }
+
+.bubble {
+  padding: 16px 18px; border: 1px solid var(--border);
+  background: var(--card); font-size: 14px; line-height: 1.7; max-width: 100%;
+}
+.msg.user .bubble { background: rgba(0,102,255,0.07); border-color: rgba(0,102,255,0.25); }
+
+.bubble h2 {
+  font-family: var(--body); font-size: 13px; font-weight: 700;
+  color: var(--blue); letter-spacing: 1px;
+  margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+.bubble h2:first-child { margin-top: 0; }
+.bubble p { margin-bottom: 10px; color: var(--text); }
+.bubble ul, .bubble ol { margin: 8px 0 8px 20px; }
+.bubble li { margin-bottom: 6px; color: var(--text); line-height: 1.6; }
+.bubble strong { color: var(--cyan); font-weight: 600; }
+.bubble em { color: var(--gold); font-style: normal; }
+.bubble code {
+  font-family: var(--mono); font-size: 12px; color: var(--cyan);
+  background: rgba(0,255,238,0.06); padding: 1px 6px;
+  border: 1px solid rgba(0,255,238,0.1);
+}
+
+/* Speak button */
+.speak-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 8px; padding: 6px 14px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--muted); background: none;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase;
+}
+.speak-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+.speak-btn.speaking { color: var(--green); border-color: var(--green); animation: speakPulse 1s infinite; }
+@keyframes speakPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* NASA images */
+.img-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-top: 14px; }
+.img-card { border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+.img-card:hover { border-color: var(--blue); }
+.img-card img { width: 100%; height: 100px; object-fit: cover; display: block; }
+.img-cap { padding: 6px 8px; font-size: 10px; color: var(--muted); background: rgba(2,6,8,0.9); }
+
+.msg-time { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+/* Typing */
+.typing { display: flex; gap: 5px; align-items: center; padding: 14px 18px; }
+.typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: tdot 1.2s infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-7px);opacity:1} }
+
+/* INPUT */
+.input-area {
+  flex-shrink: 0; padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(6,13,20,0.97);
+}
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+textarea {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--body); font-size: 14px;
+  padding: 12px 16px; resize: none; outline: none;
+  min-height: 48px; max-height: 120px; line-height: 1.5; transition: border-color 0.2s;
+}
+textarea:focus { border-color: rgba(0,170,255,0.4); }
+textarea::placeholder { color: var(--muted); }
+
+.send-btn {
+  width: 48px; height: 48px;
+  background: rgba(0,170,255,0.1); border: 1px solid rgba(0,170,255,0.3);
+  color: var(--blue); font-size: 18px; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.send-btn:hover:not(:disabled) { background: rgba(0,170,255,0.2); box-shadow: 0 0 20px rgba(0,170,255,0.2); }
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* VOICE BUTTON */
+.voice-btn {
+  width: 48px; height: 48px;
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.3);
+  color: var(--green); font-size: 20px; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  position: relative;
+}
+.voice-btn:hover { background: rgba(0,255,136,0.15); box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+.voice-btn.recording {
+  background: rgba(255,68,102,0.15);
+  border-color: var(--red); color: var(--red);
+  animation: recordPulse 0.8s infinite;
+}
+@keyframes recordPulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0.3)} 50%{box-shadow:0 0 0 8px rgba(255,68,102,0)} }
+
+.hint { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+
+/* Modal */
+.modal {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.88); align-items: center; justify-content: center; padding: 20px;
+}
+.modal.open { display: flex; }
+.modal img { max-width: 90vw; max-height: 85vh; object-fit: contain; border: 1px solid var(--border); }
+.modal-close {
+  position: absolute; top: 20px; right: 20px;
+  width: 36px; height: 36px; background: var(--card);
+  border: 1px solid var(--border); color: var(--text);
+  font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">✦</div>
+    ASTRO<span>BOT</span>
+    <span class="logo-version">V2</span>
+  </div>
+  <div class="header-right">
+    <div class="status"><div class="status-dot"></div> AGENT ONLINE</div>
+    <button class="hbtn" id="voiceToggle" onclick="toggleVoiceOutput()">🔊 VOICE ON</button>
+    <button class="hbtn" onclick="clearChat()">CLEAR</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-block">
+      <div class="sidebar-label">Picture of the Day</div>
+      <div id="apodBox">
+        <div style="height:130px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-label">Voice Status</div>
+      <div class="voice-status" id="voiceStatusBox">
+        <div class="voice-wave">
+          <div class="voice-bar"></div><div class="voice-bar"></div>
+          <div class="voice-bar"></div><div class="voice-bar"></div>
+          <div class="voice-bar"></div>
+        </div>
+        <span id="voiceStatusText">Listening...</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.6;">
+        🎤 Click mic to speak<br>
+        🔊 Toggle voice output above<br>
+        ⚡ Agent searches NASA live
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-label">Quick Questions</div>
+      <button class="quick-btn" onclick="quickAsk(this)">⚫ What is a black hole?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">🌌 How did the universe begin?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">🪐 Nearest Earth-like planet?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">✨ What is dark matter?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">🌠 Latest JWST discoveries?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">⭐ What is a neutron star?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">🔭 What is the Fermi Paradox?</button>
+      <button class="quick-btn" onclick="quickAsk(this)">💫 How do galaxies form?</button>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <span class="welcome-icon">🔭</span>
+        <div class="welcome-title">ASTROBOT V2</div>
+        <div class="welcome-sub">VOICE + AGENTIC AI // GROQ + NASA POWERED</div>
+        <div class="welcome-features">
+          <span class="feature-tag v">🎤 VOICE INPUT</span>
+          <span class="feature-tag v">🔊 VOICE OUTPUT</span>
+          <span class="feature-tag a">⚡ AGENTIC AI</span>
+          <span class="feature-tag n">🛸 NASA LIVE</span>
+          <span class="feature-tag a">🧠 DEEP REASONING</span>
+        </div>
+        <div class="welcome-desc">Speak or type your astronomy question. I think step by step, search NASA databases, and give PhD-level answers with equations and latest discoveries.</div>
+        <div class="pills">
+          <span class="pill" onclick="quickPill(this)">🌌 What is the observable universe?</span>
+          <span class="pill" onclick="quickPill(this)">⚫ How do black holes work?</span>
+          <span class="pill" onclick="quickPill(this)">🪐 Nearest Earth-like planet?</span>
+          <span class="pill" onclick="quickPill(this)">✨ What is dark matter?</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Click to speak">🎤</button>
+        <textarea id="inputField" placeholder="Ask AstroBot anything... or click 🎤 to speak" rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+      </div>
+      <div class="hint">🎤 VOICE INPUT · 🔊 VOICE OUTPUT · ⚡ AGENT SEARCHES NASA LIVE · ENTER to send</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal" onclick="closeModal()">
+  <button class="modal-close">✕</button>
+  <img id="modalImg" src="" alt="">
+</div>
+
+<script>
+const sessionId = 'session_' + Date.now();
+let loading = false;
+let voiceOutputEnabled = true;
+let currentSpeech = null;
+let recognition = null;
+let isRecording = false;
+
+// ── VOICE OUTPUT ──
+function speakText(text) {
+  if (!voiceOutputEnabled) return;
+  if (currentSpeech) { window.speechSynthesis.cancel(); }
+
+  // Clean text for speech
+  const clean = text
+    .replace(/##\s*[🔭📐🌌🧠💡🔗]\s*/g, '. ')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/`/g, '')
+    .replace(/#{1,6}\s/g, '. ')
+    .replace(/rs\s*=\s*2GM\/c²/g, 'Schwarzschild radius equals 2 G M over c squared')
+    .replace(/E\s*=\s*mc²/g, 'E equals m c squared')
+    .substring(0, 800); // Limit length
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  // Try to get a good voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v =>
+    v.name.includes('Google') ||
+    v.name.includes('Daniel') ||
+    v.name.includes('Karen') ||
+    v.lang === 'en-US'
+  );
+  if (preferred) utterance.voice = preferred;
+
+  currentSpeech = utterance;
+  window.speechSynthesis.speak(utterance);
+
+  // Update speak buttons
+  document.querySelectorAll('.speak-btn').forEach(b => {
+    b.classList.remove('speaking');
+    b.textContent = '🔊 Speak';
+  });
+  utterance.onend = () => {
+    document.querySelectorAll('.speak-btn').forEach(b => {
+      b.classList.remove('speaking');
+      b.textContent = '🔊 Speak';
+    });
+  };
+}
+
+function toggleVoiceOutput() {
+  voiceOutputEnabled = !voiceOutputEnabled;
+  const btn = document.getElementById('voiceToggle');
+  if (voiceOutputEnabled) {
+    btn.textContent = '🔊 VOICE ON';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  } else {
+    btn.textContent = '🔇 VOICE OFF';
+    btn.style.color = 'var(--muted)';
+    btn.style.borderColor = 'var(--border)';
+    if (currentSpeech) window.speechSynthesis.cancel();
+  }
+}
+
+function speakResponse(text, btn) {
+  if (currentSpeech && window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊 Speak';
+    return;
+  }
+  btn.classList.add('speaking');
+  btn.textContent = '⏹ Stop';
+  speakText(text);
+}
+
+// ── VOICE INPUT ──
+function setupVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    document.getElementById('voiceBtn').style.opacity = '0.3';
+    document.getElementById('voiceBtn').title = 'Voice not supported in this browser';
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-IN';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('voiceBtn').classList.add('recording');
+    document.getElementById('voiceBtn').textContent = '⏹';
+    document.getElementById('voiceStatusBox').classList.add('active');
+    document.getElementById('voiceStatusText').textContent = 'Listening...';
+    document.getElementById('inputField').placeholder = '🎤 Listening... speak now';
+  };
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        final += event.results[i][0].transcript;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    document.getElementById('inputField').value = final || interim;
+    document.getElementById('voiceStatusText').textContent = interim ? 'Hearing: ' + interim.substring(0,30) + '...' : 'Processing...';
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('voiceBtn').classList.remove('recording');
+    document.getElementById('voiceBtn').textContent = '🎤';
+    document.getElementById('voiceStatusBox').classList.remove('active');
+    document.getElementById('inputField').placeholder = 'Ask AstroBot anything... or click 🎤 to speak';
+
+    const text = document.getElementById('inputField').value.trim();
+    if (text) {
+      setTimeout(() => sendMessage(), 500);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    isRecording = false;
+    document.getElementById('voiceBtn').classList.remove('recording');
+    document.getElementById('voiceBtn').textContent = '🎤';
+    document.getElementById('voiceStatusBox').classList.remove('active');
+    if (e.error !== 'no-speech') {
+      console.log('Voice error:', e.error);
+    }
+  };
+}
+
+function toggleVoiceInput() {
+  if (!recognition) return;
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    if (currentSpeech) window.speechSynthesis.cancel();
+    recognition.start();
+  }
+}
+
+// ── LOAD APOD ──
+async function loadAPOD() {
+  try {
+    const res = await fetch('/apod');
+    const d = await res.json();
+    const box = document.getElementById('apodBox');
+    if (d.url && d.media_type === 'image') {
+      box.innerHTML = `
+        <img class="apod-img" src="${d.url}" onclick="openModal('${d.url}')" alt="${d.title}">
+        <div class="apod-title">${d.title}</div>
+        <div class="apod-desc">${d.explanation}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;">${d.date}</div>`;
+    }
+  } catch(e) {}
+}
+
+// ── CHAT ──
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function quickAsk(el) {
+  document.getElementById('inputField').value = el.textContent.replace(/^[⚫🌌🪐✨🌠⭐🔭💫]\s/, '');
+  sendMessage();
+}
+
+function quickPill(el) {
+  document.getElementById('inputField').value = el.textContent.replace(/^[🌌⚫🪐✨]\s/, '');
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('inputField');
+  const msg = input.value.trim();
+  if (!msg || loading) return;
+
+  if (currentSpeech) window.speechSynthesis.cancel();
+
+  input.value = '';
+  input.style.height = 'auto';
+  loading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  addMsg('user', msg);
+  const typingId = addTyping();
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, session_id: sessionId })
+    });
+    const data = await res.json();
+    removeEl(typingId);
+
+    if (data.error) {
+      addMsg('bot', '⚠️ Error: ' + data.error, [], []);
+    } else {
+      addMsg('bot', data.response, data.images || [], data.thoughts || []);
+      // Auto speak the response
+      if (voiceOutputEnabled) {
+        setTimeout(() => speakText(data.response), 500);
+      }
+    }
+  } catch(e) {
+    removeEl(typingId);
+    addMsg('bot', '⚠️ Cannot connect. Make sure Astrobot.py is running.', [], []);
+  }
+
+  loading = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+function addMsg(role, text, images = [], thoughts = []) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  const avatar = role === 'user' ? '👤' : '✦';
+  const content = role === 'bot' ? marked.parse(text) : `<p>${esc(text)}</p>`;
+
+  // Agent thoughts
+  let thoughtsHTML = '';
+  if (thoughts && thoughts.length > 0 && role === 'bot') {
+    thoughtsHTML = `
+      <div class="thinking-box">
+        <div class="thinking-title">Agent Reasoning</div>
+        ${thoughts.map(t => `<div class="thinking-step">→ ${t}</div>`).join('')}
+      </div>`;
+  }
+
+  // Images
+  let imgHTML = '';
+  if (images && images.length > 0) {
+    imgHTML = '<div class="img-grid">' + images.map(img =>
+      `<div class="img-card" onclick="openModal('${img.url}')">
+        <img src="${img.url}" alt="${img.title}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <div class="img-cap">${img.title.substring(0,45)}</div>
+      </div>`
+    ).join('') + '</div>';
+  }
+
+  // Speak button for bot
+  const speakBtnHTML = role === 'bot' ?
+    `<button class="speak-btn" onclick="speakResponse(${JSON.stringify(text)}, this)">🔊 Speak</button>` : '';
+
+  div.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div class="msg-body">
+      ${thoughtsHTML}
+      <div class="bubble">${content}${imgHTML}</div>
+      ${speakBtnHTML}
+      <div class="msg-time">${time}</div>
+    </div>`;
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const id = 'typing_' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'msg bot'; div.id = id;
+  div.innerHTML = `
+    <div class="avatar">✦</div>
+    <div class="msg-body">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--purple);margin-bottom:6px;letter-spacing:2px;">⚡ AGENT THINKING...</div>
+      <div class="bubble"><div class="typing">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div></div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+
+function removeEl(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function clearChat() {
+  if (currentSpeech) window.speechSynthesis.cancel();
+  document.getElementById('messages').innerHTML = `
+    <div class="welcome" id="welcome">
+      <span class="welcome-icon">🔭</span>
+      <div class="welcome-title">ASTROBOT V2</div>
+      <div class="welcome-sub">CHAT CLEARED — READY</div>
+    </div>`;
+}
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openModal(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+// ── INIT ──
+marked.setOptions({ breaks: true, gfm: true });
+loadAPOD();
+setupVoiceInput();
+
+// Load voices
+window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+</script>
+</body>
+</html>
