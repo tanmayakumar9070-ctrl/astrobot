@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, jsonify
 from groq import Groq
 import requests
 import json
+from config import GROQ_API_KEY
 
 app = Flask(__name__)
 
-GROQ_API_KEY ="YOUR_GROQ_KEY_HERE"
 client = Groq(api_key=GROQ_API_KEY)
 
 # ── TOOLS ──
