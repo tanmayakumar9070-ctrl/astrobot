@@ -190,10 +190,16 @@ def apod():
     try:
         resp = requests.get("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY", timeout=8)
         d = resp.json()
-        return jsonify({"title": d.get("title",""), "url": d.get("url",""), "explanation": d.get("explanation","")[:200]+"...", "date": d.get("date",""), "media_type": d.get("media_type","image")})
+        return jsonify({
+            "title": d.get("title", ""),
+            "url": d.get("url", ""),
+            "explanation": d.get("explanation", "")[:200] + "...",
+            "date": d.get("date", ""),
+            "media_type": d.get("media_type", "image")
+        })
     except:
         return jsonify({"error": "Could not fetch APOD"})
 
 if __name__ == "__main__":
-    print("🔭 AstroBot v2 — Agent + Voice starting at http://localhost:5000")
+    print("🔭 AstroBot v2 — Agent starting at http://localhost:5000")
     app.run(debug=True, port=5000)
