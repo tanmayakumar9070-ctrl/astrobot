@@ -1,3 +1,17 @@
-".env" 
-".env.txt" 
+# Secret files — never push these to GitHub
+.env
+.env.txt
 config.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
